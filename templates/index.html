@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Real-Time Web Chat</title>
+
+<style>
+:root {
+    --bg-main: #0b141a;
+    --bg-sidebar: #111b21;
+    --bg-chat: #101a20;
+    --bg-header: #202c33;
+    --bg-bubble: #202c33;
+    --bg-self: #005c4b;
+    --accent: #00a884;
+    --text-main: #e9edef;
+    --text-muted: #8696a0;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    height: 100vh;
+    background: radial-gradient(circle at top, #202c33, #0b141a);
+    color: var(--text-main);
+    font-family: system-ui, sans-serif;
+}
+
+.app {
+    height: 100%;
+    display: flex;
+}
+
+.sidebar {
+    width: 300px;
+    background: var(--bg-sidebar);
+    padding: 16px;
+    border-right: 1px solid #202c33;
+}
+
+.sidebar h3 {
+    margin-top: 0;
+}
+
+.sidebar input {
+    width: 100%;
+    padding: 8px;
+    margin: 6px 0;
+    border-radius: 6px;
+    border: none;
+    background: #202c33;
+    color: var(--text-main);
+}
+
+.sidebar button {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    margin-right: 6px;
+    background: var(--accent);
+    color: white;
+}
+
+#status {
+    font-size: 12px;
+    margin-top: 6px;
+    color: var(--text-muted);
+}
+
+#online-users {
+    list-style: none;
+    padding: 0;
+}
+
+#online-users li {
+    padding: 6px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+#online-users li:hover {
+    background: #202c33;
+}
+
+.chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-chat);
+}
+
+.chat-header {
+    padding: 12px 16px;
+    background: var(--bg-header);
+    border-bottom: 1px solid #202c33;
+}
+
+.chat-header-main {
+    font-size: 16px;
+}
+
+.chat-header-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+#chat-box {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.message {
+    max-width: 70%;
+    padding: 8px 12px;
+    margin: 6px 0;
+    border-radius: 10px;
+    font-size: 13px;
+}
+
+.self {
+    align-self: flex-end;
+    background: var(--bg-self);
+}
+
+.other {
+    align-self: flex-start;
+    background: var(--bg-bubble);
+}
+
+.private {
+    border: 1px dashed var(--accent);
+}
+
+.user {
+    font-size: 11px;
+    opacity: 0.7;
+}
+
+.time {
+    font-size: 10px;
+    opacity: 0.5;
+    text-align: right;
+}
+
+#typing {
+    font-size: 12px;
+    padding-left: 16px;
+    color: var(--text-muted);
+}
+
+.chat-input {
+    display: flex;
+    padding: 12px;
+    border-top: 1px solid #202c33;
+}
+
+.chat-input input {
+    flex: 1;
+    padding: 10px;
+    border-radius: 20px;
+    border: none;
+    background: #202c33;
+    color: var(--text-main);
+}
+
+.chat-input button {
+    margin-left: 8px;
+    padding: 10px 18px;
+    border-radius: 20px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+    <div class="sidebar">
+        <h3>Login / Register</h3>
+
+        <input id="username" placeholder="Username">
+        <input id="password" type="password" placeholder="Password">
+
+        <button id="login-btn">Login</button>
+        <button id="register-btn">Register</button>
+
+        <div id="status"></div>
+
+        <h3>Online Users</h3>
+        <ul id="online-users"></ul>
+    </div>
+
+    <div class="chat">
+        <div class="chat-header">
+            <div class="chat-header-main" id="chat-title">Chat Room</div>
+            <div class="chat-header-sub" id="welcome-text">
+                Login to start chatting
+            </div>
+        </div>
+
+        <div id="chat-box"></div>
+        <div id="typing"></div>
+
+        <div class="chat-input">
+            <input id="message-input" placeholder="Type a message">
+            <button id="send-btn">Send</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<script src="/static/script.js"></script>
+</body>
+</html>
