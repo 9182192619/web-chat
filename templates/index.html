@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Real-Time Web Chat</title>
 
 <style>
@@ -176,6 +177,51 @@ body {
     background: var(--accent);
     color: white;
     cursor: pointer;
+    
+   @media (max-width: 768px) {
+
+    .app {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #202c33;
+    }
+
+    .chat {
+        flex: 1;
+    }
+
+    #online-users {
+        display: flex;
+        overflow-x: auto;
+        gap: 10px;
+        padding-bottom: 10px;
+    }
+
+    #online-users li {
+        background: #202c33;
+        padding: 6px 10px;
+        border-radius: 20px;
+        white-space: nowrap;
+        font-size: 12px;
+    }
+
+    .message {
+        max-width: 85%;
+        font-size: 14px;
+    }
+
+    .chat-input input {
+        font-size: 14px;
+        padding: 12px;
+    }
+
+    .chat-input button {
+        padding: 12px 16px;
+    }
 }
 </style>
 </head>
