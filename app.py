@@ -5,17 +5,12 @@ from datetime import datetime
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "chatappsecret"
-
-# IMPORTANT: eventlet for Render / WebSockets
-socketio = SocketIO(
-    app,
-    cors_allowed_origins="*",
-    async_mode="eventlet"
-)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 
 DB_NAME = "web_chat_users.db"
-connected_users = {}   # sid -> username
 
+# sid -> username
+connected_users = {}
 
 # ---------- DATABASE ----------
 def init_db():
@@ -93,7 +88,13 @@ def login():
 # ---------- SOCKET EVENTS ----------
 @socketio.on("join")
 def join(data):
-    username = data["username"]
+    username = data.get("username")
+
+    # prevent duplicate logins
+    for sid, user in list(connected_users.items()):
+        if user == username:
+            connected_users.pop(sid)
+
     connected_users[request.sid] = username
 
     emit("message", {
@@ -111,9 +112,11 @@ def message(data):
     if not sender:
         return
 
-    text = data["text"]
+    text = data.get("text", "").strip()
+    if not text:
+        return
 
-    # PRIVATE MESSAGE
+    # ---------- PRIVATE MESSAGE ----------
     if text.startswith("/w "):
         parts = text.split(" ", 2)
         if len(parts) < 3:
@@ -125,31 +128,41 @@ def message(data):
             return
 
         target, msg = parts[1], parts[2]
+
+        target_sid = None
         for sid, user in connected_users.items():
             if user == target:
-                emit("message", {
-                    "username": sender,
-                    "text": f"[PM] {msg}",
-                    "time": now(),
-                    "private": True
-                }, to=sid)
+                target_sid = sid
+                break
 
-                emit("message", {
-                    "username": sender,
-                    "text": f"[PM to {target}] {msg}",
-                    "time": now(),
-                    "private": True
-                }, to=request.sid)
-                return
+        if not target_sid:
+            emit("message", {
+                "username": "SERVER",
+                "text": f"{target} is not online",
+                "time": now()
+            }, to=request.sid)
+            return
 
+        # send to receiver
         emit("message", {
-            "username": "SERVER",
-            "text": f"{target} is not online",
-            "time": now()
+            "username": sender,
+            "text": f"[PM] {msg}",
+            "time": now(),
+            "private": True
+        }, to=target_sid)
+
+        # confirmation to sender
+        emit("message", {
+            "username": sender,
+            "text": f"[PM to {target}] {msg}",
+            "time": now(),
+            "private": True,
+            "self": True
         }, to=request.sid)
+
         return
 
-    # PUBLIC MESSAGE
+    # ---------- PUBLIC MESSAGE ----------
     emit("message", {
         "username": sender,
         "text": text,
@@ -158,10 +171,15 @@ def message(data):
 
 
 @socketio.on("typing")
-def typing():
+def typing(data):
     user = connected_users.get(request.sid)
-    if user:
-        emit("typing", {"username": user}, broadcast=True, include_self=False)
+    if not user:
+        return
+
+    emit("typing", {
+        "username": user,
+        "typing": data.get("typing", False)
+    }, broadcast=True, include_self=False)
 
 
 @socketio.on("disconnect")
@@ -173,11 +191,10 @@ def disconnect():
             "text": f"{user} left the chat",
             "time": now()
         }, broadcast=True)
+
         emit("user_list", online_users(), broadcast=True)
 
 
-# ---------- RUN ----------
 if __name__ == "__main__":
     init_db()
-    # IMPORTANT: Render uses port 10000
-    socketio.run(app, host="0.0.0.0", port=10000)
+    socketio.run(app, host="0.0.0.0", port=5001, debug=True)

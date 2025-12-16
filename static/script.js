@@ -1,113 +1,155 @@
+// ---------------- SOCKET ----------------
 const socket = io();
+
+// ---------------- ELEMENTS ----------------
+const chatBox = document.getElementById("chat-box");
+const messageInput = document.getElementById("message-input");
+const sendBtn = document.getElementById("send-btn");
 
 const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");
 const loginBtn = document.getElementById("login-btn");
 const registerBtn = document.getElementById("register-btn");
-const statusDiv = document.getElementById("status");
+const loginStatus = document.getElementById("login-status");
 
-const chatBox = document.getElementById("chat-box");
-const messageInput = document.getElementById("message-input");
-const sendBtn = document.getElementById("send-btn");
-const onlineUsers = document.getElementById("online-users");
-const typingDiv = document.getElementById("typing");
+const onlineUsersUL = document.getElementById("online-users");
+const chatSection = document.getElementById("chat-section");
+const welcomeText = document.getElementById("welcome-text");
 
-let currentUser = "";
-let privateTarget = "";
+// ---------------- STATE ----------------
+let currentUser = null;
+let typingTimer = null;
 
-/* ---------- LOGIN / REGISTER ---------- */
-function auth(url) {
+// ---------------- AUTH ----------------
+loginBtn.onclick = async () => {
     const username = usernameInput.value.trim();
     const password = passwordInput.value.trim();
 
-    fetch(url, {
+    if (!username || !password) {
+        loginStatus.innerText = "Enter username & password";
+        return;
+    }
+
+    const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            currentUser = username;
-
-            statusDiv.innerText = "Logged in as " + username;
-            document.getElementById("chat-title").innerText =
-                "Chat Room – " + username;
-            document.getElementById("welcome-text").innerText =
-                "You are online";
-
-            socket.emit("join", { username });
-        } else {
-            statusDiv.innerText = data.message;
-        }
     });
-}
 
-loginBtn.onclick = () => auth("/api/login");
-registerBtn.onclick = () => auth("/api/register");
-
-/* ---------- SEND MESSAGE ---------- */
-function sendMessage() {
-    if (!messageInput.value) return;
-
-    if (privateTarget) {
-        socket.emit("message", {
-            text: `/w ${privateTarget} ${messageInput.value}`
-        });
-        privateTarget = "";
-        messageInput.placeholder = "Type a message";
-    } else {
-        socket.emit("message", { text: messageInput.value });
+    const data = await res.json();
+    if (!data.success) {
+        loginStatus.innerText = data.message;
+        return;
     }
 
+    afterLogin(username);
+};
+
+registerBtn.onclick = async () => {
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    if (!username || !password) {
+        loginStatus.innerText = "Enter username & password";
+        return;
+    }
+
+    const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+    });
+
+    const data = await res.json();
+    loginStatus.innerText = data.message;
+};
+
+// ---------------- AFTER LOGIN ----------------
+function afterLogin(username) {
+    currentUser = username;
+
+    loginStatus.innerText = `Logged in as ${username}`;
+    welcomeText.innerText = `Chat Room — ${username}`;
+    chatSection.style.display = "flex";
+
+    socket.emit("join", { username });
+    socket.emit("request_user_list");
+}
+
+// ---------------- SEND MESSAGE ----------------
+sendBtn.onclick = sendMessage;
+messageInput.addEventListener("keypress", e => {
+    if (e.key === "Enter") sendMessage();
+});
+
+function sendMessage() {
+    const text = messageInput.value.trim();
+    if (!text) return;
+
+    socket.emit("message", { text });
     messageInput.value = "";
 }
 
-sendBtn.onclick = sendMessage;
-
-messageInput.addEventListener("keypress", e => {
-    if (e.key === "Enter") sendMessage();
-    socket.emit("typing");
-});
-
-/* ---------- RECEIVE MESSAGE ---------- */
+// ---------------- RECEIVE MESSAGE ----------------
 socket.on("message", data => {
-    const div = document.createElement("div");
-    div.className = "message " +
-        (data.username === currentUser ? "self" : "other");
+    const msgDiv = document.createElement("div");
+    msgDiv.classList.add("message");
 
-    if (data.private) div.classList.add("private");
+    if (data.username === currentUser || data.self) {
+        msgDiv.classList.add("self");
+    } else {
+        msgDiv.classList.add("other");
+    }
 
-    div.innerHTML = `
+    if (data.private) {
+        msgDiv.style.border = "1px dashed var(--accent)";
+    }
+
+    msgDiv.innerHTML = `
         <div class="user">${data.username}</div>
-        <div>${data.text}</div>
+        <div class="text">${data.text}</div>
         <div class="time">${data.time}</div>
     `;
 
-    chatBox.appendChild(div);
+    chatBox.appendChild(msgDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
 });
 
-/* ---------- ONLINE USERS CLICK → PRIVATE ---------- */
+// ---------------- ONLINE USERS ----------------
 socket.on("user_list", users => {
-    onlineUsers.innerHTML = "";
-    users.forEach(user => {
-        if (user === currentUser) return;
+    onlineUsersUL.innerHTML = "";
 
+    users.forEach(user => {
         const li = document.createElement("li");
         li.innerText = user;
 
-        li.onclick = () => {
-            privateTarget = user;
-            messageInput.placeholder = "Private message to " + user;
-        };
+        if (user !== currentUser) {
+            li.style.cursor = "pointer";
+            li.onclick = () => {
+                messageInput.value = `/w ${user} `;
+                messageInput.focus();
+            };
+        }
 
-        onlineUsers.appendChild(li);
+        onlineUsersUL.appendChild(li);
     });
 });
 
-/* ---------- TYPING ---------- */
+// ---------------- TYPING INDICATOR ----------------
+messageInput.addEventListener("input", () => {
+    socket.emit("typing", { typing: true });
+
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => {
+        socket.emit("typing", { typing: false });
+    }, 700);
+});
+
 socket.on("typing", data => {
-    typingDiv.innerText = data.username + " is typing...";
-    setTimeout(() => typingDiv.innerText = "", 1000);
+    if (!data.typing) {
+        welcomeText.innerText = `Chat Room — ${currentUser}`;
+        return;
+    }
+
+    welcomeText.innerText = `${data.username} is typing…`;
 });
