@@ -15,6 +15,8 @@ const loginStatus = document.getElementById("status");
 const onlineUsersUL = document.getElementById("online-users");
 const welcomeText = document.getElementById("welcome-text");
 const chatContainer = document.querySelector(".chat");
+let privateTarget = null; // stores selected private user
+
 
 // ---------------- STATE ----------------
 let currentUser = null;
@@ -86,8 +88,16 @@ function sendMessage() {
     const text = messageInput.value.trim();
     if (!text) return;
 
-    socket.emit("message", { text });
+    if (privateTarget) {
+        socket.emit("message", {
+            text: `/w ${privateTarget} ${text}`
+        });
+    } else {
+        socket.emit("message", { text }); 
+    }
     messageInput.value = "";
+
+    
 }
 
 // ---------------- RECEIVE MESSAGE ----------------
@@ -125,7 +135,8 @@ socket.on("user_list", users => {
 
         if (user !== currentUser) {
             li.onclick = () => {
-                messageInput.value = `/w ${user} `;
+                privateTarget = user;
+                welcomeText.innerText = `Private chat with ${user}`;
                 messageInput.focus();
             };
         }
