@@ -1,10 +1,12 @@
 from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO, emit
 import sqlite3, hashlib
-from datetime import datetime
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "chatappsecret"
+
+# Socket.IO (threading mode – safe for Render)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 DB_NAME = "web_chat_users.db"
@@ -56,8 +58,10 @@ def check_login(username, password):
     return row and row[0] == hash_password(password)
 
 
+# ---------- TIME (IST FIX) ----------
 def now():
-    return datetime.now().strftime("%H:%M")
+    ist = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    return ist.strftime("%H:%M")
 
 
 def online_users():
@@ -159,7 +163,6 @@ def message(data):
             "private": True,
             "self": True
         }, to=request.sid)
-
         return
 
     # ---------- PUBLIC MESSAGE ----------
@@ -195,12 +198,12 @@ def disconnect():
         emit("user_list", online_users(), broadcast=True)
 
 
+# ---------- RUN ----------
 if __name__ == "__main__":
     init_db()
     socketio.run(
-    app,
-    host="0.0.0.0",
-    port=10000,
-    allow_unsafe_werkzeug=True
-)
-
+        app,
+        host="0.0.0.0",
+        port=10000,
+        allow_unsafe_werkzeug=True
+    )
