@@ -18,9 +18,7 @@
     --text-muted: #8696a0;
 }
 
-* {
-    box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
     margin: 0;
@@ -43,10 +41,6 @@ body {
     border-right: 1px solid #202c33;
 }
 
-.sidebar h3 {
-    margin-top: 0;
-}
-
 .sidebar input {
     width: 100%;
     padding: 8px;
@@ -62,9 +56,9 @@ body {
     border-radius: 6px;
     border: none;
     cursor: pointer;
-    margin-right: 6px;
     background: var(--accent);
     color: white;
+    margin-right: 6px;
 }
 
 #status {
@@ -91,7 +85,7 @@ body {
 /* ---------- CHAT ---------- */
 .chat {
     flex: 1;
-    display: flex;
+    display: none; /* hidden until login */
     flex-direction: column;
     background: var(--bg-chat);
 }
@@ -100,10 +94,6 @@ body {
     padding: 12px 16px;
     background: var(--bg-header);
     border-bottom: 1px solid #202c33;
-}
-
-.chat-header-main {
-    font-size: 16px;
 }
 
 .chat-header-sub {
@@ -152,12 +142,6 @@ body {
     text-align: right;
 }
 
-#typing {
-    font-size: 12px;
-    padding-left: 16px;
-    color: var(--text-muted);
-}
-
 /* ---------- INPUT ---------- */
 .chat-input {
     display: flex;
@@ -184,47 +168,10 @@ body {
     cursor: pointer;
 }
 
-/* ---------- MOBILE RESPONSIVE ---------- */
+/* ---------- MOBILE ---------- */
 @media (max-width: 768px) {
-
-    .app {
-        flex-direction: column;
-    }
-
-    .sidebar {
-        width: 100%;
-        border-right: none;
-        border-bottom: 1px solid #202c33;
-    }
-
-    #online-users {
-        display: flex;
-        overflow-x: auto;
-        gap: 10px;
-        padding-bottom: 10px;
-    }
-
-    #online-users li {
-        background: #202c33;
-        padding: 6px 10px;
-        border-radius: 20px;
-        white-space: nowrap;
-        font-size: 12px;
-    }
-
-    .message {
-        max-width: 85%;
-        font-size: 14px;
-    }
-
-    .chat-input input {
-        font-size: 14px;
-        padding: 12px;
-    }
-
-    .chat-input button {
-        padding: 12px 16px;
-    }
+    .app { flex-direction: column; }
+    .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #202c33; }
 }
 </style>
 </head>
@@ -250,14 +197,10 @@ body {
 
     <div class="chat">
         <div class="chat-header">
-            <div class="chat-header-main" id="chat-title">Chat Room</div>
-            <div class="chat-header-sub" id="welcome-text">
-                Login to start chatting
-            </div>
+            <div id="welcome-text">Login to start chatting</div>
         </div>
 
         <div id="chat-box"></div>
-        <div id="typing"></div>
 
         <div class="chat-input">
             <input id="message-input" placeholder="Type a message">

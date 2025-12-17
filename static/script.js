@@ -10,11 +10,11 @@ const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");
 const loginBtn = document.getElementById("login-btn");
 const registerBtn = document.getElementById("register-btn");
-const loginStatus = document.getElementById("login-status");
+const loginStatus = document.getElementById("status");
 
 const onlineUsersUL = document.getElementById("online-users");
-const chatSection = document.getElementById("chat-section");
 const welcomeText = document.getElementById("welcome-text");
+const chatContainer = document.querySelector(".chat");
 
 // ---------------- STATE ----------------
 let currentUser = null;
@@ -70,7 +70,7 @@ function afterLogin(username) {
 
     loginStatus.innerText = `Logged in as ${username}`;
     welcomeText.innerText = `Chat Room — ${username}`;
-    chatSection.style.display = "flex";
+    chatContainer.style.display = "flex";
 
     socket.emit("join", { username });
     socket.emit("request_user_list");
@@ -102,7 +102,7 @@ socket.on("message", data => {
     }
 
     if (data.private) {
-        msgDiv.style.border = "1px dashed var(--accent)";
+        msgDiv.classList.add("private");
     }
 
     msgDiv.innerHTML = `
@@ -124,7 +124,6 @@ socket.on("user_list", users => {
         li.innerText = user;
 
         if (user !== currentUser) {
-            li.style.cursor = "pointer";
             li.onclick = () => {
                 messageInput.value = `/w ${user} `;
                 messageInput.focus();
